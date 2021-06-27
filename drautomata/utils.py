@@ -69,9 +69,9 @@ def FSMDecode(jsontxt):
     
     
 
-def writeToFile(text=None,filename, option=None):
+def writeToFile(filename, text=None, option=None):
         if option == "JSON":
-            text = FSMEncoder().encode(self)
+            ext = ".json"
         if option == "Visualize":
             ext = ".tex"
         exists = checkExists(filename + ext)
@@ -86,14 +86,14 @@ def writeToFile(text=None,filename, option=None):
                 exists = False
             if(option.upper() == "N"):
                 filename = input("Please specify a new filename:\n>\t")
-                exists = utils.checkExists(filename + ext)
+                exists = checkExists(filename + ext)
             if(option.upper() == "C"):
                 print("Save cancelled")
                 return -1
         f = open(str(filename) + ext, "w")
         f.write(text)
         f.close()
-        if(utils.checkExists(filename + ext) == True):
+        if(checkExists(filename + ext) == True):
             print("File saved successfully: " + filename + ext)
         return 1
 

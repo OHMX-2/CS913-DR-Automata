@@ -75,29 +75,8 @@ class FSM:
             return True;
         
     def save(self,filename):
-        jsontxt = utils.FSMEncoder().encode(self)
-        exists = utils.checkExists(filename + ".json")
-        while(exists == True):
-            print("File '" + filename + "' Already exists, what would you like to do?\n")
-            print("O: Overwrite")
-            print("N: Specify alternative filename")
-            print("C: Cancel")
-            option = input(">\t")
-            print()
-            if(option.upper() == "O"):
-                exists = False
-            if(option.upper() == "N"):
-                filename = input("Please specify a new filename:\n>\t")
-                exists = utils.checkExists(filename + ".json")
-            if(option.upper() == "C"):
-                print("Save cancelled")
-                return -1
-        f = open(str(filename) + ".json", "w")
-        f.write(jsontxt)
-        f.close()
-        if(utils.checkExists(filename + ".json") == True):
-            print("FSM saved successfully: " + filename + ".json")
-        return 1
+        text = utils.FSMEncoder().encode(self)
+        utils.writeToFile(filename, text=text, option="JSON")
     
     
     def validate(self):
