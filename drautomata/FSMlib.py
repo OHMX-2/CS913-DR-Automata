@@ -132,17 +132,13 @@ class FSM:
                     stateConnectionDict[(state.states[i]+"|"+state.directions[i])] = state.chars[i]
                     connectedStates[state.states[i]] = [state.directions[i]]
                 
-                print("Dict:", stateConnectionDict)
                 if(self.FSMType == "2DFA"):
                     edgeDirection = (": " + state.directions[i])  
                 
                 edgeLabels = list(stateConnectionDict.values())
                 allConnections[state.identifier] = state.states
 
-            print("ALL CONNECTIONS: ", allConnections)
             edgesToAdd = len(stateConnectionDict)
-            print("count:", edgesToAdd)
-            print("edge labels:", edgeLabels)
             edges = list(stateConnectionDict.keys())
             for i in range(edgesToAdd):
                 pipeIndex = edges[i].index("|")
@@ -174,11 +170,9 @@ class FSM:
         
         fileString += nodeString + pathString + "\end{tikzpicture}"
 
-        f = open("demofile2.txt", "a")
-        f.write("Now the file has more content!")
-        f.close()
+        filename = input("Please enter the TikZ output filename\n>\t")
 
-        print(fileString)
+        utils.writeToFile(filename, fileString, "Visualize")
         return  
     
 
