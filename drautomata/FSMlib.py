@@ -122,15 +122,24 @@ class FSM:
             edgeLabel = ""
             for i in range(len(state.states)):            
                 isConnected = (state.states[i] in connectedStates.keys()) 
-                if isConnected:
+                if(isConnected and self.FSMType == "2DFA"):
                     isSameDirection = (state.directions[i] in connectedStates[state.states[i]])
-                direction = state.directions[i] 
+                    direction = state.directions[i] 
+                elif(isConnected and self.FSMType != "2DFA"):
+                    isSameDirection = True
                 
-                if(isConnected and isSameDirection):                
-                    stateConnectionDict[(state.states[i]+"|"+state.directions[i])] += "," + state.chars[i]
+                if(isConnected and isSameDirection):              
+                    if(self.FSMType == "2DFA"): 
+                        stateConnectionDict[(state.states[i]+"|"+state.directions[i])] += "," + state.chars[i]
+                    else:
+                        stateConnectionDict[state.states[i]] += "," + state.chars[i]
                 else:
-                    stateConnectionDict[(state.states[i]+"|"+state.directions[i])] = state.chars[i]
-                    connectedStates[state.states[i]] = [state.directions[i]]
+                    if(self.FSMType == "2DFA"):
+                        stateConnectionDict[(state.states[i]+"|"+state.directions[i])] = state.chars[i]
+                        connectedStates[state.states[i]] = [state.directions[i]]
+                    else:
+                        stateConnectionDict[state.states[i]] = state.chars[i]
+                        connectedStates[state.states[i]] = True
                 
                 if(self.FSMType == "2DFA"):
                     edgeDirection = (": " + state.directions[i])  
@@ -141,9 +150,11 @@ class FSM:
             edgesToAdd = len(stateConnectionDict)
             edges = list(stateConnectionDict.keys())
             for i in range(edgesToAdd):
-                pipeIndex = edges[i].index("|")
-                stateID = edges[i][0:pipeIndex]
-                direction = edges[i][pipeIndex+1:]
+                if(self.FSMType == "2DFA"):
+                    pipeIndex = edges[i].index("|")
+                    stateID = edges[i][0:pipeIndex]
+                    direction = edges[i][pipeIndex+1:]
+                else: stateID = edges[i]
                 modifier = ""
                 if(stateID == state.identifier):
                     modifier = "[loop above]"
@@ -152,13 +163,19 @@ class FSM:
                         modifier = "[bend left]"
                 pathString += "(" + state.identifier + ")\t"
                 pathString += "edge" + "\t" + modifier + "\t" + "node{$" 
-                pathString += edgeLabels[i] + ": " + direction + "$} " + "(" + stateID + ")\n"
+                pathString += edgeLabels[i]
+                if(self.FSMType == "2DFA"): pathString += ": " + direction
+                pathString += "$} " + "(" + stateID + ")\n"
         pathString += ";"
         
         #Define nodes and positioning
         for y in range(len(self.allStates)):
+            
             state = self.allStates[y]
             nodeString += "\\node[state"
+            print("Checking state: ", state)
+            print("accepting?:" , state.accepting)
+            
             if state == self.initialState:
                 nodeString +=  ",initial"
             if state.accepting == True:
