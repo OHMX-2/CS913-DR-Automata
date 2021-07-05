@@ -36,7 +36,7 @@ if(FSMType == '2DFA'):
     print("2: Sweeping")
     _2dfa_restriction = input()
     
-    arrAlphabet.append("<")
+    arrAlphabet.insert(0,"<")
     arrAlphabet.append(">")
     directions = []
     
@@ -94,7 +94,8 @@ while(pending_states):
                 accepting=True
             elif(acceptingInput.upper() == 'N'):
                 accepting=False
-                    
+            if (FSMType == 'DFA'): directions = None
+            if (FSMType == '2DFA'): directions = []
             new_state = State(new_state_id, arrAlphabet, [], directions, accepting)
             
 
@@ -125,23 +126,40 @@ while(pending_states):
             currentStates.append(existing_state_id)
             
         if(FSMType == '2DFA'):
+            print("Currently on state:", states[state].getIdentifier())
+            print(states[state].getStates())
+            print(states[state].getDirections())
             currentDirections = states[state].getDirections()
+            print("current:", currentDirections)
             direction = ""
             
-            if(_2dfa_restriction == 0):
+            if(_2dfa_restriction == "0"):
                 while(direction.upper() != 'L' and direction.upper() != 'R'):
                     direction = input("Upon transitioning, which direction should the read-head move (L/R)\n>\t")
                     
-            if(_2dfa_restriction == 2):
-                if(symbol != "<" or symbol != ">"):
-                    print("Sweeping automata selected, reversal is not possible on non-endmarker symbols, if this symbol is read whilst in State:", state, "traversal will continue in the same direction.")
+            if(_2dfa_restriction == "1"):      
+                if(symbol == ">"):
+                    print("Rotating automata selected, upon reaching the right endmarker, the automata may return to the beginning of the string and scan again (L->R only)")
+                    print("Upon reading the end marker in state", states[state].getIdentifier(), "should the system move back to the beginning of the input? (Y/N)(Rotate)\n")
+                    choice = input(">\t")
+                    if(choice.upper() == "Y"): direction = "ROTATE"
+                    else: direction = "R"
+                else:
+                    direction = "R"
+                
+            if(_2dfa_restriction == "2"):
+                if(symbol == "<" or symbol == ">"):
+                    while(direction.upper() != 'L' and direction.upper() != 'R'):
+                        direction = input("Upon transitioning, which direction should the read-head move (L/R)\n>\t")
+                else:
+                    print("Sweeping automata selected, reversal is not possible on non-endmarker symbols, if this symbol (" + str(symbol) + ") is read whilst in State:", state, "traversal will continue in the same direction.")
                     direction = "C"
             currentDirections.append(direction)    
             states[state].setDirections(currentDirections)
         
         states[state].setStates(currentStates)
                 
-    #print("removing pending state", state)           
+    print("removing pending state", state)           
     pending_states.remove(state)
 
 allStates =  list(states.values())

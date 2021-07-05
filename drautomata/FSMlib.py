@@ -57,6 +57,7 @@ class FSM:
                 if (debug): print("\nCurrent state: " + self.currentState.identifier)
                 if (debug): print("Processing index: " + str(i))
                 if (debug): print("Current Symbol: " + str(inputstring[i]))
+                if(i>0): lastDirection = direction
                 newstate_code, direction = self.currentState.process(inputstring[i])
                 if (debug): print("Transitioning to: " + newstate_code + " with direction: " + direction)
                 newstate = self.find(newstate_code)  
@@ -65,6 +66,12 @@ class FSM:
                 else:
                     #No state found in state table
                     if (debug): print("No state found for code: " + newstate_code + " moving RIGHT and continuing in same state")
+                if (direction=="C"):
+                    direction = lastDirection
+                    if(debug): print("Automata continuing in previous transition direction:", direction)
+                if (direction=="ROTATE"):
+                    i = 0
+                    if(debug): print("Index reset to 0 (rotate at endmarker)")
                 if (direction=="L"):
                     i-=1
                     if (debug): print("Index-1 (LEFT), now at index: " + str(i) + "/" + str(len(inputstring)))
