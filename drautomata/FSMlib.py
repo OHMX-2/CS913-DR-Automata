@@ -19,11 +19,24 @@ class FSM:
     def getAllStates(self):
         return self.allStates
     
+    def setInitialState(self, state):
+        self.initialState = state
+        
+    def setCurrentState(self, state):
+        self.currentState = state
+        
+    def setAllStates(self, states):
+        self.allStates = states
+    
     def find(self,newstate_code):
         for state in self.allStates:
             if(state.getIdentifier() == newstate_code):
-                #print("Found State!:" , newstate_code)
                 return state
+                      
+    def addState(self, state):
+        states = self.getAllStates()
+        states.append(state)
+        self.setAllStates(states)
             
     def __str__(self):
         output = self.FSMType
@@ -193,23 +206,57 @@ class FSM:
         return  
     
 
-      
+    #Union of automata requires a product construction of the state tables of both individual automata
     def union(self, automata):
+        #Check if FSMs are of the same type
         if(self.FSMType != automata.FSMType):
             print("FSMs are not of the same type: " + self.FSMType + " != " + automata.FSMType)
-            return -1;
-        else:
-            startState = self.initialState
-            unionStates = []
-            for state in self.allStates:
-                unionStates.append(state)
-            for state in automata.allStates:
-                unionStates.append(state)
-            
-            
+            return -1
+        #TODO: allow for non-matching sets, and add error states for non-shared symbol transitions
+        #Check if they contain the same symbol set      
+        if(sorted(self.initialState.getChars()) != sorted(self.initialState.getChars())):
+            print("FSMs use different alphabets")
+            return -1   
+        if(self.FSMType != "DFA"):
+            print("Only one-way deterministic finite automata are currently supported for this operation")
+            return -1
         
+        else:
+            newStates = []
+
+            for state1 in self.allStates:
+                for state2 in automata.allStates:
+                    
+                    states = []
+                    identifier = state1.getIdentifier() + state2.getIdentifier()
+                    print("processing state:", identifier)
+                    print("is it accepting?:", (state1.getAccepting() == True or state2.getAccepting() == True))
+                    chars = list(set(state1.getChars()) | set(state2.getChars()))
+                    chars.sort()
+                    for i in range(len(chars)):
+                        print("DFA 1 (even ones) transitions to:", state1.states[i], "upon receiving:",chars[i])
+                        print("DFA 2 (ends in one) transitions to:", state2.states[i], "upon receiving:",chars[i])
+                        print("so combined state is:", (state1.states[i]+state2.states[i]) )
+                        states.append((state1.states[i]+state2.states[i]))
+                    if(state1.getAccepting() == True or state2.getAccepting() == True):
+                        print(identifier, " - is accepting")
+                        accepting = True
+                    else:
+                        accepting = False
+                    productState = State(identifier, chars=chars, states=states, accepting=accepting)
+                    print("adding state:", productState.getIdentifier())
+                    newStates.append(productState)
+            initialState = newStates[0]
+            DFA = FSM(self.FSMType, initialState, newStates)
+            return DFA
+                    
+                    
             
-#def createFSM():            
+            
+                        
+                        
+                        
+           
         
 
 class State:
@@ -247,6 +294,19 @@ class State:
         
     def setDirections(self, directions):
         self.directions = directions
+        
+    def addTransition(self, char, state, directions = None):
+        chars = self.getChars()
+        states = self.getStates()
+        directions = self.getDirections()
+        
+        chars.append(char)
+        states.append(state)
+        directions.append(direction)
+        
+        self.setChars(chars)
+        self.setStates(states)
+        self.setDirections(directions)
     
     def process(self, input):
         if input in self.chars:
