@@ -19,7 +19,7 @@ directions = None
 
 inputAlphabet = input("Please enter the input alphabet, with characters separated by a vertical bar \"|\" \nNOTE: '<' and '>' are reserved for 2DFA end-markers \n>\t")
 arrAlphabet = inputAlphabet.split('|')
-print(arrAlphabet)
+arrAlphabet.sort()
 
 
 while(FSMType != 'DFA' and FSMType != '2DFA'):
