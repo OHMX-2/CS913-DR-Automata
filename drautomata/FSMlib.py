@@ -47,12 +47,17 @@ class FSM:
             output += "\n" + str(state.getIdentifier()) + ":" + str(state.getChars()) + "," + str(state.getStates()) + "," + str(state.getDirections()) 
         return output
     
-    def processString(self, inputstring, debug=False, stepmode=False):
+    def processString(self, inputstring, debug=False, stepmode=False, limit=1000):
         if (stepmode): 
             debug=True #Set debug to true, so that the user can see what is happening
             input("Press return to begin the FSM")
         if(self.FSMType == "2DFA"):
+            iters = 0
             i=0
+            #TODO: Explore other termination conditions
+            if (iters > limit):
+                print("Max iteration limit (" + limit + ") reached, input rejected.")
+                return False
             while i < len(inputstring):
                 if (debug): print("\nCurrent state: " + self.currentState.identifier)
                 if (debug): print("Processing index: " + str(i))
@@ -79,6 +84,7 @@ class FSM:
                     i+=1#Even if no direction is given (no transition to state) then move right to progress.
                     if (debug): print("Index+1 (RIGHT), now at index: " + str(i) + "/" + str(len(inputstring)))
                 if (stepmode): input("Press return to proceed to the next step")
+                iters += 1
         elif(self.FSMType == "DFA"):
             for char in inputstring:
                 if (debug): print("Current Symbol: " + char)
@@ -92,7 +98,7 @@ class FSM:
                 if (stepmode): input("Press return to proceed to the next step")
         if (self.currentState.accepting):
             if (debug): print("Input string: '" + inputstring  + "' accepted!")
-            return True;
+            return True
         
     def save(self,filename):
         text = utils.FSMEncoder().encode(self)
