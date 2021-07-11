@@ -214,17 +214,33 @@ class FSM:
     
 
     #Union of automata requires a product construction of the state tables of both individual automata
-    def union(self, automata):
+    def operation(self, oper, automata=None):
+        
+        if (oper == "COMPLEMENT" and automata == None):
+            newStates = []
+            for state in self.allStates:                
+                identifier = state.getIdentifier()
+                chars = state.getChars()
+                states = state.getStates()
+                accepting = (not(state.getAccepting()))
+                print("States:")
+                print(state.getAccepting())
+                print(accepting)
+                newState = State(identifier, chars=chars, states=states, accepting=accepting)
+                newStates.append(newState)
+            initialState = newStates[0]
+            DFA = FSM(self.FSMType, initialState, newStates)
+            return DFA
         #Check if FSMs are of the same type
-        if(self.FSMType != automata.FSMType):
+        elif(self.FSMType != automata.FSMType):
             print("FSMs are not of the same type: " + self.FSMType + " != " + automata.FSMType)
             return -1
         #TODO: allow for non-matching sets, and add error states for non-shared symbol transitions
         #Check if they contain the same symbol set      
-        if(sorted(self.initialState.getChars()) != sorted(self.initialState.getChars())):
+        elif(sorted(self.initialState.getChars()) != sorted(self.initialState.getChars())):
             print("FSMs use different alphabets")
             return -1   
-        if(self.FSMType != "DFA"):
+        elif(self.FSMType != "DFA"):
             print("Only one-way deterministic finite automata are currently supported for this operation")
             return -1
         
@@ -245,17 +261,25 @@ class FSM:
                         print("DFA 2 (ends in one) transitions to:", state2.states[i], "upon receiving:",chars[i])
                         print("so combined state is:", (state1.states[i]+state2.states[i]) )
                         states.append((state1.states[i]+state2.states[i]))
-                    if(state1.getAccepting() == True or state2.getAccepting() == True):
-                        print(identifier, " - is accepting")
-                        accepting = True
-                    else:
-                        accepting = False
+                    if (oper.upper() == "UNION"):
+                        if(state1.getAccepting() == True or state2.getAccepting() == True):
+                            print(identifier, " - is accepting")
+                            accepting = True
+                        else:
+                            accepting = False
+                    elif (oper.upper() == "INTERSECTION"):
+                        if(state1.getAccepting() == True and state2.getAccepting() == True):
+                            print(identifier, " - is accepting")
+                            accepting = True
+                        else:
+                            accepting = False
                     productState = State(identifier, chars=chars, states=states, accepting=accepting)
                     print("adding state:", productState.getIdentifier())
                     newStates.append(productState)
             initialState = newStates[0]
             DFA = FSM(self.FSMType, initialState, newStates)
             return DFA
+        
                     
                     
             
