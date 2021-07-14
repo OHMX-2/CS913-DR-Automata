@@ -48,11 +48,11 @@ class FSM:
         return output
     
     def processString(self, inputstring, debug=False, stepmode=False, limit=1000):
+        iters = 0
         if (stepmode): 
             debug=True #Set debug to true, so that the user can see what is happening
             input("Press return to begin the FSM")
         if(self.FSMType == "2DFA"):
-            iters = 0
             i=0
             #TODO: Explore other termination conditions
             if (iters > limit):
@@ -96,6 +96,8 @@ class FSM:
                 else:
                     if (debug): print("No state found for code: " + newstate_code + " continuing in same state")
                 if (stepmode): input("Press return to proceed to the next step")
+                iters += 1
+        print("Total iterations:" + str(iters))
         if (self.currentState.accepting):
             if (debug): print("Input string: '" + inputstring  + "' accepted!")
             return True
