@@ -47,6 +47,7 @@ class FSM:
             output += "\n" + str(state.getIdentifier()) + ":" + str(state.getChars()) + "," + str(state.getStates()) + "," + str(state.getDirections()) 
         return output
     
+
     def processString(self, inputstring, debug=False, stepmode=False, limit=1000):
         iters = 0
         if (stepmode): 
@@ -55,6 +56,7 @@ class FSM:
         if(self.FSMType == "2DFA"):
             i=0
             #TODO: Explore other termination conditions
+            #Terminates the process if an iteration limit is reached.
             if (iters > limit):
                 print("Max iteration limit (" + limit + ") reached, input rejected.")
                 return False
@@ -71,15 +73,19 @@ class FSM:
                 else:
                     #No state found in state table
                     if (debug): print("No state found for code: " + newstate_code + " moving RIGHT and continuing in same state")
+                #Continues in the same direction, used in Sweeping 2DFA
                 if (direction=="C"):
                     direction = lastDirection
                     if(debug): print("Automata continuing in previous transition direction:", direction)
+                #Returns to the beginning of the input string, used in Rotating 2DFA
                 if (direction=="ROTATE"):
                     i = 0
                     if(debug): print("Index reset to 0 (rotate at endmarker)")
+                #Left
                 if (direction=="L"):
                     i-=1
                     if (debug): print("Index-1 (LEFT), now at index: " + str(i) + "/" + str(len(inputstring)))
+                #Right
                 else:
                     i+=1#Even if no direction is given (no transition to state) then move right to progress.
                     if (debug): print("Index+1 (RIGHT), now at index: " + str(i) + "/" + str(len(inputstring)))
@@ -90,7 +96,8 @@ class FSM:
                 if (debug): print("Current Symbol: " + char)
                 newstate_code, direction = self.currentState.process(char)
                 if (debug): print("Transitioning to: " + newstate_code)
-                newstate = self.find(newstate_code)   
+                newstate = self.find(newstate_code) 
+                #If no state is specified in the transition, stay in the same state
                 if newstate is not None:
                     self.currentState = newstate
                 else:
@@ -120,7 +127,100 @@ class FSM:
         
      
     def visualize(self):
-        fileString = "\\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3.5cm,scale = 1,transform shape]"
+        distanceChosen = False
+        distance = ""
+        arrowChosen = False
+        arrowstyle = ""
+        option = ""
+        #Customization
+        while(not distanceChosen):
+            print("please specify the distance between nodes in centimeters (min: 0, max: 10, default: 3.5)")
+            distanceChoice = input(">\t")           
+            try:
+                distance = float(distanceChoice)
+            except ValueError:
+                pass
+            if(distance > 0 and distance <= 10): distanceChosen = True
+                
+                
+        while(not arrowChosen):
+            print("please specify a custom arrow style (default: 16 (Stealth)")
+            print("Press ? to see options")  
+            
+            option = input(">\t")
+            #Open help menu
+            if (option == "?"):
+                menuOption = ""
+                while(menuOption != "G" and menuOption != "B" and menuOption != "M"):
+                    print("B: Show barbed-type arrow heads")
+                    print("G: Show geometric-type arrow heads")
+                    print("M: Show mathematical-type arrow heads")
+                    menuOption = input(">\t")     
+                    menuOption = menuOption.upper()
+                #Barb-type arrow heads
+                if(menuOption == "B"):
+                    print("1: Arc Barb[] - Half-circle barb")
+                    print("2: Bar[] - Vertical bar barb '-|'")
+                    print("3: Bracket[] - Right-bracket barb '-]'")
+                    print("4: Hooks[] - double-hooked barb '-3'")
+                    print("5: Parenthesis[] - Right-parenthesis barb '-)'")
+                    print("6: Straight Barb[] - arrow-like straight barbs '->'")
+                    print("7: Tee Barb[] - I-beam barb '-I'")
+                #Geometric arrow heads
+                if(menuOption == "G"):
+                    print("8: Circle[] - Circular")
+                    print("9: Diamond[] - Diamond Shaped")
+                    print("10: Ellipse[] - Elliptical")
+                    print("11: Kite[] - Latex default arrow, pointed tips")
+                    print("12: Latex[] - Latex default arrow, pointed tips")
+                    print("13: Rectangle[] - Rectangular")
+                    print("14: Square[] - Square shaped")
+                    print("15: Stealth[] - Stealth bomber shaped, pointed tips")
+                    print("16: Triangle[] - Triangular")
+                    print("17: Turned Square[] - 45 degree turned square")
+                #Mathematical arrowheads
+                if(menuOption == "M"):
+                    print("18: Classical TikZ Rightarrow[]")
+                    print("19: Computer Modern Rightarrow[]")
+                    print("20: Implies[] - double line")
+                option = input(">\t")
+            
+            
+                    
+            #Resolve option
+            try:
+                intOption = int(option)
+            except ValueError:
+                pass
+            if(intOption == 1): arrowstyle = "Arc Barb"
+            if(intOption == 2): arrowstyle = "Bar"
+            if(intOption == 3): arrowstyle = "Bracket"
+            if(intOption == 4): arrowstyle = "Hooks"
+            if(intOption == 5): arrowstyle = "Parenthesis"
+            if(intOption == 6): arrowstyle = "Straight Barb"
+            if(intOption == 7): arrowstyle = "Tee Barb"
+            if(intOption == 8): arrowstyle = "Circle"
+            if(intOption == 9): arrowstyle = "Diamond"
+            if(intOption == 10): arrowstyle = "Ellipse"
+            if(intOption == 11): arrowstyle = "Kite"
+            if(intOption == 12): arrowstyle = "Latex"
+            if(intOption == 13): arrowstyle = "Rectangle"
+            if(intOption == 14): arrowstyle = "Square"
+            if(intOption == 15): arrowstyle = "Stealth"
+            if(intOption == 16): arrowstyle = "Triangle"
+            if(intOption == 17): arrowstyle = "Turned Square"
+            if(intOption == 18): arrowstyle = "Classical TikZ Rightarrow"
+            if(intOption == 19): arrowstyle = "Computer Modern Rightarrow"
+            if(intOption == 20): arrowstyle = "Implies"
+            
+            if(arrowstyle != ""): arrowChosen = True
+
+        
+        fileString = "\\begin{tikzpicture}[->,>="
+        fileString += arrowstyle
+        fileString += ",shorten >=1pt,auto,node distance="
+        fileString += str(distance)
+        fileString += "cm,scale = 1,transform shape]"
         fileString += "\n"
         stateCount = 0
         index = 0
@@ -201,8 +301,6 @@ class FSM:
             
             state = self.allStates[y]
             nodeString += "\\node[state"
-            print("Checking state: ", state)
-            print("accepting?:" , state.accepting)
             
             if state == self.initialState:
                 nodeString +=  ",initial"
