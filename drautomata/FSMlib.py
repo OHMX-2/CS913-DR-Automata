@@ -171,7 +171,7 @@ class FSM:
                     print("8: Circle[] - Circular")
                     print("9: Diamond[] - Diamond Shaped")
                     print("10: Ellipse[] - Elliptical")
-                    print("11: Kite[] - Latex default arrow, pointed tips")
+                    print("11: Kite[] - Kite shaped")
                     print("12: Latex[] - Latex default arrow, pointed tips")
                     print("13: Rectangle[] - Rectangular")
                     print("14: Square[] - Square shaped")
