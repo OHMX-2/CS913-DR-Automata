@@ -1,5 +1,6 @@
 import utils     
-            
+ 
+#TODO: Create child classes for each automata type - code is becoming messy with more FSM classes being added.        
 class FSM:
     def __init__(self, FSMType, initialState, allStates):
         self.FSMType = FSMType
@@ -53,6 +54,8 @@ class FSM:
         if (stepmode): 
             debug=True #Set debug to true, so that the user can see what is happening
             input("Press return to begin the FSM")
+            
+        #2DFA
         if(self.FSMType == "2DFA"):
             i=0
             #TODO: Explore other termination conditions
@@ -91,6 +94,8 @@ class FSM:
                     if (debug): print("Index+1 (RIGHT), now at index: " + str(i) + "/" + str(len(inputstring)))
                 if (stepmode): input("Press return to proceed to the next step")
                 iters += 1
+                
+        #DFA
         elif(self.FSMType == "DFA"):
             for char in inputstring:
                 if (debug): print("Current Symbol: " + char)
@@ -104,6 +109,30 @@ class FSM:
                     if (debug): print("No state found for code: " + newstate_code + " continuing in same state")
                 if (stepmode): input("Press return to proceed to the next step")
                 iters += 1
+                
+        #NFA
+        elif(self.FSMType == "NFA"):
+
+            currentStates = []
+            currentStates.append(self.getInitialState())
+            
+            for char in inputstring:
+                nextStates = []
+                for state in currentStates:
+                    stateIdentifiers = state.nfa_process(char)
+                    for ID in stateIdentifiers:
+                        nextState = self.find(ID)
+                        nextStates.append(nextState)    
+                currentStates = nextStates
+            
+            for state in currentStates:
+                if state.getAccepting() == True:
+                    return True
+            return False
+        
+                
+                
+                
         print("Total iterations:" + str(iters))
         if (self.currentState.accepting):
             if (debug): print("Input string: '" + inputstring  + "' accepted!")
@@ -454,4 +483,37 @@ class State:
             return newstate_code, direction
         return None
 
+
+    def nfa_process(self,input):
+        chars = self.getChars()
+        states = self.getStates()
+        directions = self.getDirections()
+        
+        
+        potentialTransitions = []
+        
+        for i in range(len(chars)):
+            if input == chars[i]:
+                if directions != None: potentialTransitions.append((states[i],directions[i]))
+                else: potentialTransitions.append((states[i]))              
+        return potentialTransitions
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
             

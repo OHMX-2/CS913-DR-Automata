@@ -53,7 +53,7 @@ def FSMDecode(jsontxt):
                 initial_state = state
             allStates.append(state)
         
-        elif(decoded['Type'] == "DFA"):
+        elif(decoded['Type'] == "DFA" or decoded['Type'] == "NFA"):
             state = FSMlib.State(key, chars, states, accepting=accepting)
             if(key == initial_id):
                 initial_state = state
