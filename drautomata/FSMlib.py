@@ -112,7 +112,6 @@ class FSM:
                 
         #NFA
         elif(self.FSMType == "NFA"):
-
             currentStates = []
             currentStates.append(self.getInitialState())
             
@@ -122,15 +121,14 @@ class FSM:
                     stateIdentifiers = state.nfa_process(char)
                     for ID in stateIdentifiers:
                         nextState = self.find(ID)
-                        nextStates.append(nextState)    
+                        if nextState not in nextStates: 
+                            nextStates.append(nextState)    
                 currentStates = nextStates
-            
             for state in currentStates:
                 if state.getAccepting() == True:
                     return True
             return False
         
-                
                 
                 
         print("Total iterations:" + str(iters))
@@ -487,15 +485,13 @@ class State:
     def nfa_process(self,input):
         chars = self.getChars()
         states = self.getStates()
-        directions = self.getDirections()
-        
-        
+        directions = self.getDirections()       
         potentialTransitions = []
         
         for i in range(len(chars)):
             if input == chars[i]:
                 if directions != None: potentialTransitions.append((states[i],directions[i]))
-                else: potentialTransitions.append((states[i]))              
+                else: potentialTransitions.append((states[i]))  
         return potentialTransitions
                            
                            
