@@ -128,8 +128,7 @@ class FSM:
                 if state.getAccepting() == True:
                     return True
             return False
-        
-                
+           
                 
         print("Total iterations:" + str(iters))
         if (self.currentState.accepting):
@@ -459,18 +458,22 @@ class State:
     def setDirections(self, directions):
         self.directions = directions
         
-    def addTransition(self, char, state, directions = None):
+    def addTransition(self, char, state, direction = None):
         chars = self.getChars()
         states = self.getStates()
         directions = self.getDirections()
         
         chars.append(char)
-        states.append(state)
-        directions.append(direction)
-        
         self.setChars(chars)
+        
+        
+        states.append(state)
         self.setStates(states)
-        self.setDirections(directions)
+        
+        
+        if directions != None: 
+            directions.append(direction)
+            self.setDirections(directions)
     
     def process(self, input):
         if input in self.chars:
