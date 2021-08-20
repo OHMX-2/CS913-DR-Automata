@@ -1,4 +1,5 @@
 import utils     
+from copy import deepcopy
  
 #TODO: Create child classes for each automata type - code is becoming messy with more FSM classes being added.        
 class FSM:
@@ -38,6 +39,11 @@ class FSM:
         states = self.getAllStates()
         states.append(state)
         self.setAllStates(states)
+        
+    def removeState(self, state):
+        states = self.getAllStates()
+        states.remove(state)
+        self.setAllStates(states)
             
     def __str__(self):
         output = self.FSMType
@@ -51,6 +57,7 @@ class FSM:
 
     def processString(self, inputstring, debug=False, stepmode=False, limit=1000):
         iters = 0
+        inputAccepted = False
         if (stepmode): 
             debug=True #Set debug to true, so that the user can see what is happening
             input("Press return to begin the FSM")
@@ -94,6 +101,8 @@ class FSM:
                     if (debug): print("Index+1 (RIGHT), now at index: " + str(i) + "/" + str(len(inputstring)))
                 if (stepmode): input("Press return to proceed to the next step")
                 iters += 1
+            if(self.currentState.getAccepting() == True):
+                inputAccepted=True
                 
         #DFA
         elif(self.FSMType == "DFA"):
@@ -109,6 +118,11 @@ class FSM:
                     if (debug): print("No state found for code: " + newstate_code + " continuing in same state")
                 if (stepmode): input("Press return to proceed to the next step")
                 iters += 1
+            print(self.currentState.identifier)
+            print(self.currentState.accepting)
+            if(self.currentState.getAccepting() == True):
+                print("DFA accepting input on",self.currentState.identifier)
+                inputAccepted=True
                 
         #NFA
         elif(self.FSMType == "NFA"):
@@ -116,6 +130,7 @@ class FSM:
             currentStates.append(self.getInitialState())
             
             for char in inputstring:
+                if (debug): print("Current Symbol: " + char)
                 nextStates = []
                 for state in currentStates:
                     stateIdentifiers = state.nfa_process(char)
@@ -124,16 +139,16 @@ class FSM:
                         if nextState not in nextStates: 
                             nextStates.append(nextState)    
                 currentStates = nextStates
+                iters += 1
             for state in currentStates:
+                self.setCurrentState(state)
                 if state.getAccepting() == True:
-                    return True
-            return False
-           
-                
+                    print("NFA accepting input on",self.currentState.identifier)
+                    inputAccepted=True
+
+                      
         print("Total iterations:" + str(iters))
-        if (self.currentState.accepting):
-            if (debug): print("Input string: '" + inputstring  + "' accepted!")
-            return True
+        return(inputAccepted)
         
     def save(self,filename):
         text = utils.FSMEncoder().encode(self)
@@ -150,7 +165,18 @@ class FSM:
             print(("L" in state.directions or "R" in state.directions) or not state.direction)
         print(valid_ids)
         print(accepting_state_count)
-        
+     
+    def minimize(self):
+        print("SELF:", self)
+        statesToCompare = self.getAllStates()
+        while(statesToCompare):
+            state1 = statesToCompare.pop(0)
+            for state2 in statesToCompare:
+                if state1.chars == state2.chars and state1.states == state2.states:
+                    self.removeState(state2)
+        return self
+                    
+            
      
     def visualize(self):
         distanceChosen = False
@@ -345,6 +371,85 @@ class FSM:
         return  
     
 
+    def nfa_to_dfa(self):
+        if self.FSMType != "NFA":
+            print("This automata is not a one-way non-deterministic automaton. This function converts NFA to DFA only.")
+            pass
+        
+        #For clarity
+        NFA = self
+        
+        unresolvedStates = {}
+        #List all chars in all states
+        chars = self.initialState.getChars()
+        initial = State(self.initialState.identifier, [], [])
+        
+        #Get a unique list of symbols the NFA accepts
+        arrAlphabet = list(dict.fromkeys(chars).keys())
+        
+        
+        #Create and empty DFA and add the initial state
+        DFA = FSM("DFA", None, [])
+        DFA.setInitialState(initial)
+        DFA.setCurrentState(initial)
+        DFA.addState(initial)
+         
+        #Resolve initial state + transitions
+        for char in (arrAlphabet):
+            states = self.initialState.getResultStateByChar(char)
+            identifier = ""
+            for ndState in states:
+                identifier += ndState 
+            unresolvedStates[identifier] = states
+            initial.addTransition(char, identifier)    
+            newState = State(identifier, chars = [], states = [], accepting = False, directions=None)                                                      
+            DFA.addState(newState)
+            
+
+        
+        #All other states + transitions
+        for state in DFA.allStates:
+            #That are not the initial state
+            if state is not DFA.initialState:
+                #Resolve transition
+                for char in (arrAlphabet): 
+                    
+                    states = []
+                    #Find all potential state transitions in the original NFA
+                    for stateID in unresolvedStates[state.identifier]:                       
+                        result = self.find(stateID)
+                        resultState = result.getResultStateByChar(char)
+                        
+                        #If the result state is already in the list, don't add it again (avoids duplicate and "double" states (i.e. q0q0))
+                        if(list(set(states).intersection(resultState)) != resultState):
+                            #Add the state to the state to the DFA states list
+                            states.extend(resultState)
+                            
+                    
+                    #Link to an existing, or create a new state based on the union of all potential state transitions
+                    identifier = ""
+                    acceptingState=False
+                    for ndState in states:
+                        if(NFA.find(ndState).getAccepting()):
+                            acceptingState = True
+                        identifier += ndState
+                    if identifier not in unresolvedStates.keys():
+                        unresolvedStates[identifier] = states
+                        newState = State(identifier, chars = [], states = [], accepting = acceptingState, directions=None)
+                        DFA.addState(newState)
+                    state.addTransition(char, identifier)                   
+       
+        return DFA                                                                 
+
+                        
+
+                
+                    
+                
+                
+                 
+
+
     #Union of automata requires a product construction of the state tables of both individual automata
     def operation(self, oper, automata=None):
         
@@ -427,8 +532,8 @@ class State:
         self.identifier = identifier
         self.chars = chars
         self.states = states
-        self.accepting = accepting
         self.directions = directions
+        self.accepting = accepting
         
         
         
@@ -474,6 +579,17 @@ class State:
         if directions != None: 
             directions.append(direction)
             self.setDirections(directions)
+    
+    def getResultStateByChar(self, char):
+        chars = self.getChars()
+        states = self.getStates()
+        resultStates = []
+        
+        for i in range(len(chars)):
+            if chars[i] == char:
+                resultStates.append(states[i])
+                
+        return resultStates
     
     def process(self, input):
         if input in self.chars:
