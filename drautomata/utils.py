@@ -67,14 +67,45 @@ def FSMDecode(jsontxt):
     print(DFA)
     return DFA
     
+def processMultipleStrings(filename, FSM, output=False):
+    acceptedIndices = []
+    acceptedCount = 0
+    outputContent = ""
     
+    f = open(filename, "r") 
+    lines = f.readlines()
+    for i in range(len(lines)):
+        inputString = lines[i].strip()
+        accepted = FSM.processString(inputString)
+        if(accepted):
+            acceptedCount += 1
+            acceptedIndices.append(i)
+        if(output):
+            outputContent += inputString + "," + str(accepted) + "\n"
+      
+    if(output):
+        outputFilename = "results-" + filename
+        writeToFile(outputFilename, outputContent, "Results")   
+        
+        
+    return acceptedCount, acceptedIndices
+    
+
 
 def writeToFile(filename, text=None, option=None):
         if option == "JSON":
             ext = ".json"
         if option == "Visualize":
             ext = ".tex"
-        exists = checkExists(filename + ext)
+        if option == "Results":
+            ext = ".txt"
+        else:
+            ext = ""
+        
+        if(ext not in filename):
+            filename += ext
+            
+        exists = checkExists(filename)
         while(exists == True):
             print("File '" + filename + "' Already exists, what would you like to do?\n")
             print("O: Overwrite")
@@ -86,15 +117,15 @@ def writeToFile(filename, text=None, option=None):
                 exists = False
             if(option.upper() == "N"):
                 filename = input("Please specify a new filename:\n>\t")
-                exists = checkExists(filename + ext)
+                exists = checkExists(filename)
             if(option.upper() == "C"):
                 print("Save cancelled")
                 return -1
-        f = open(str(filename) + ext, "w")
+        f = open(str(filename), "w")
         f.write(text)
         f.close()
-        if(checkExists(filename + ext) == True):
-            print("File saved successfully: " + filename + ext)
+        if(checkExists(filename) == True):
+            print("File saved successfully: " + filename)
         return 1
 
 def checkExists(filename):
