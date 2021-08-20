@@ -121,7 +121,6 @@ class FSM:
             print(self.currentState.identifier)
             print(self.currentState.accepting)
             if(self.currentState.getAccepting() == True):
-                print("DFA accepting input on",self.currentState.identifier)
                 inputAccepted=True
                 
         #NFA
@@ -142,8 +141,7 @@ class FSM:
                 iters += 1
             for state in currentStates:
                 self.setCurrentState(state)
-                if state.getAccepting() == True:
-                    print("NFA accepting input on",self.currentState.identifier)
+                if self.currentState.getAccepting() == True:
                     inputAccepted=True
 
                       
