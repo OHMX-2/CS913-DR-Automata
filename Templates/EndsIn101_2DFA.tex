@@ -1,0 +1,29 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata}
+\begin{document}
+
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,node distance=3.5cm,scale = 1,transform shape]
+\node[state,initial] (q0) {$q0$};
+\node[state] [right of=q0](q4) {$q4$};
+\node[state] [below of=q0](qr) {$qr$};
+\node[state] [below of=q4](q3) {$q3$};
+\node[state] [below of=q3](q2) {$q2$};
+\node[state,accepting] [below of=q2](q1) {$q1$};
+\path (q0)	edge	[loop above]	node{$<,0,1: R$} (q0)
+(q0)	edge		node{$>: L$} (q4)
+(q4)	edge	[bend right]	node{$<,0,>: R$} (qr)
+(q4)	edge		node{$1: L$} (q3)
+(qr)	edge	[loop left]	node{$<,0,1,>: R$} (qr)
+(q3)	edge		node{$<,1,>: R$} (qr)
+(q3)	edge		node{$0: L$} (q2)
+(q2)	edge	[bend left]	node{$<,0,>: R$} (qr)
+(q2)	edge		node{$1: R$} (q1)
+(q1)	edge	[loop left]	node{$<,0,1,>: R$} (q1)
+;\end{tikzpicture}
+
+
+\end{document}
