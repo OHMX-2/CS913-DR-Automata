@@ -28,6 +28,7 @@ while(FSMType != 'DFA' and FSMType != '2DFA' and FSMType != 'NFA'):
 if(FSMType == '2DFA'):
     #Add the end markers as part of the input alphabet
     
+    #Rotating/Sweeping Automata - https://link.springer.com/chapter/10.1007%2F978-3-540-85780-8_36
     print("Please enter the 2DFA restriction mode:")
     print("0: None")
     print("1: Rotating")
@@ -52,13 +53,13 @@ elif(acceptingInput.upper() == 'N'):
 initial_state = State(state_id, [], [], directions, accepting)
 states[state_id] = initial_state
 pending_states.append(state_id)
-#transitionType = ""
 
 
 
 
 while(pending_states):
     currentState = pending_states[0]
+    directions = []
     symbolIndex=0
     
     print()
@@ -70,8 +71,8 @@ while(pending_states):
         if(len(states[key].getStates()) == 0):
             print("No transitions defined yet\n")
 
+    #For all symbols in alphabet
     while symbolIndex in range(len(arrAlphabet)):
-            print("i = ", symbolIndex, " arrAlphabet = ", arrAlphabet, " length:", len(arrAlphabet))
             symbol = arrAlphabet[symbolIndex]
             transitionType = ""
             
@@ -93,20 +94,20 @@ while(pending_states):
                 elif(acceptingInput.upper() == 'N'):
                     accepting=False
                     
-                
-                
+                #Initialize a new state
                 newState = State(new_state_id, [], [], directions.copy(), accepting)
-
-                states[new_state_id] = newState
+                states[new_state_id] = newState                
                 
-                transition_state_id = new_state_id   
                 
+                #Set the transition state to be this new state
+                transition_state_id = new_state_id    
+                
+                #Add the state to the pending states list, so that transitions can be defined for it.
                 pending_states.append(new_state_id)
             
             #Existing State
             if(transitionType.upper() == 'E'):
-                print("Choose an existing state to transition to:")
-                
+                print("Choose an existing state to transition to:")                
                 for key in states.keys():
                     print("State:",key)
                     for i in range(len(states[key].getStates())):
@@ -118,7 +119,7 @@ while(pending_states):
                 existing_state_id = input("\n>\t")
                 
                 
-                
+                #Set the transition state to be this existing state
                 transition_state_id = existing_state_id
 
                 
@@ -127,10 +128,12 @@ while(pending_states):
             if(FSMType == '2DFA' or FSMType == '2NFA'):
                 direction = ""
                 
+                #No restriction
                 if(_2dfa_restriction == "0"):
                     while(direction.upper() != 'L' and direction.upper() != 'R'):
                         direction = input("Upon transitioning, which direction should the read-head move (L/R)\n>\t")
-                        
+                
+                #Rotating 2DFA
                 if(_2dfa_restriction == "1"):      
                     if(symbol == ">"):
                         print("Rotating automata selected, upon reaching the right endmarker, the automata may return to the beginning of the string and scan again (L->R only)")
@@ -140,7 +143,8 @@ while(pending_states):
                         else: direction = "R"
                     else:
                         direction = "R"
-                    
+                 
+                #Sweeping 2DFA
                 if(_2dfa_restriction == "2"):
                     if(symbol == "<" or symbol == ">"):
                         while(direction.upper() != 'L' and direction.upper() != 'R'):
@@ -149,9 +153,11 @@ while(pending_states):
                         print("Sweeping automata selected, reversal is not possible on non-endmarker symbols, if this symbol (" + str(symbol) + ") is read whilst in State:", currentState, "traversal will continue in the same direction.")
                         direction = "C"
               
+            #If deterministic, only 1 transition per symbol is allowed.
             if(FSMType == 'DFA' or FSMType == '2DFA'):
                 symbolIndex+=1
                 
+            #If non-deterministic, allow user to define more transitions for any given symbol.
             if(FSMType == 'NFA' or FSMType == '2NFA'):
                 option = ""
                 while option != "1" and option != "2":
@@ -169,15 +175,17 @@ while(pending_states):
             elif(FSMType == '2DFA' or FSMType == '2NFA'):
                 states[currentState].addTransition(symbol, transition_state_id, direction)
                       
-    print("removing pending state", currentState)           
+    #Transitions defined, move on to next state      
     pending_states.remove(currentState)
 
+#Create a list of all states to add to the FSM
 allStates =  list(states.values())
 
+#Create the FSM
 FiniteStateMachine = FSM(FSMType ,allStates[0], allStates)
 
 print(FiniteStateMachine)
-filename = "stepwise-test2DFA"
+filename = input("Please enter the FSM output filename\n>\t")
 FiniteStateMachine.save(filename);
 
         
