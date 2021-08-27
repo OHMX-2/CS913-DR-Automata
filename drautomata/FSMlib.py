@@ -194,7 +194,7 @@ class FSM:
                 
                 
         while(not arrowChosen):
-            print("please specify a custom arrow style (default: 16 (Stealth)")
+            print("please specify a custom arrow style (default: 15 (Stealth)")
             print("Press ? to see options")  
             
             option = input(">\t")
