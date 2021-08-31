@@ -1,4 +1,5 @@
 from json import JSONEncoder, loads
+from more_itertools import distinct_permutations
 import FSMlib
 import os.path
 
@@ -9,7 +10,7 @@ class FSMEncoder(JSONEncoder):
         fsmDict['States'] = {}
         fsmDict['Type'] = fsm.FSMType
         fsmDict['Initial'] = fsm.initialState.identifier
-        if(fsm.FSMType == "DFA"):
+        if(fsm.FSMType == "DFA" or fsm.FSMType == "NFA"):
             for i in range(len(allStates)):
                    identifier = allStates[i].getIdentifier();
                    transitionChars = allStates[i].getChars();
@@ -89,44 +90,60 @@ def processMultipleStrings(filename, FSM, output=False):
         
         
     return acceptedCount, acceptedIndices
+
+            
+def factorial(num):   
+    for i in range(1, num):
+        num *= i
+    return num
+        
+def generatePermutations(alphabet, length):
+    permutations = []
+    symbols = alphabet.copy()
+    #Create duplicate symbols to allow for repeated symbols in permutations
+    symbols *= length
+    for perm in distinct_permutations(symbols, length):
+        permutations.append(''.join(perm))
+    return permutations
     
 
-
-def writeToFile(filename, text=None, option=None):
-        if option == "JSON":
-            ext = ".json"
-        if option == "Visualize":
-            ext = ".tex"
-        if option == "Results":
-            ext = ".txt"
-        else:
-            ext = ""
-        
-        if(ext not in filename):
-            filename += ext
-            
-        exists = checkExists(filename)
-        while(exists == True):
-            print("File '" + filename + "' Already exists, what would you like to do?\n")
-            print("O: Overwrite")
-            print("N: Specify alternative filename")
-            print("C: Cancel")
-            option = input(">\t")
-            print()
-            if(option.upper() == "O"):
-                exists = False
-            if(option.upper() == "N"):
-                filename = input("Please specify a new filename:\n>\t")
-                exists = checkExists(filename)
-            if(option.upper() == "C"):
-                print("Save cancelled")
-                return -1
-        f = open(str(filename), "w")
-        f.write(text)
-        f.close()
-        if(checkExists(filename) == True):
-            print("File saved successfully: " + filename)
-        return 1
+def writeToFile(filename, text=None, option=None):  
+    if option == "JSON":
+        ext = ".json"
+    elif option == "Visualize":
+        ext = ".tex"
+    elif option == "Results":
+        ext = ".txt"
+    else:
+        ext = ""
+     
+    
+    if(ext not in filename):
+        filename += ext
+      
+    
+    exists = checkExists(filename)
+    while(exists == True):
+        print("File '" + filename + "' Already exists, what would you like to do?\n")
+        print("O: Overwrite")
+        print("N: Specify alternative filename")
+        print("C: Cancel")
+        option = input(">\t")
+        print()
+        if(option.upper() == "O"):
+            exists = False
+        if(option.upper() == "N"):
+            filename = input("Please specify a new filename:\n>\t")
+            exists = checkExists(filename)
+        if(option.upper() == "C"):
+            print("Save cancelled")
+            return -1
+    f = open(str(filename), "w")
+    f.write(text)
+    f.close()
+    if(checkExists(filename) == True):
+        print("File saved successfully: " + filename)
+    return 1
 
 def checkExists(filename):
     return os.path.isfile(filename)
