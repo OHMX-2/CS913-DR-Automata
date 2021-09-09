@@ -1,1 +1,0 @@
-{"States": {"q0": {"Transitions": [["0", "q0"], ["1", "q1"]], "Accepting": false}, "q1": {"Transitions": [["0", "q1"], ["1", "q2"]], "Accepting": false}, "q2": {"Transitions": [["0", "q2"], ["1", "q1"]], "Accepting": true}}, "Type": "DFA", "Initial": "q0"}

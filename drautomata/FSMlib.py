@@ -1,7 +1,6 @@
 import utils     
 from copy import deepcopy
- 
-#TODO: Create child classes for each automata type - code is becoming messy with more FSM classes being added.        
+      
 class FSM:
     def __init__(self, FSMType, initialState, allStates):
         self.FSMType = FSMType
@@ -51,11 +50,20 @@ class FSM:
         output += "\nallStates:" 
         
         for state in self.allStates:
-            output += "\n" + str(state.getIdentifier()) + ":" + str(state.getChars()) + "," + str(state.getStates()) + "," + str(state.getDirections()) 
+            output += "\n" + str(state.getIdentifier()) + ":" + str(state.getChars()) + "," + str(state.getStates()) + "," + str(state.getDirections()) + "," + str(state.getAccepting()) 
         return output
     
 
     def processString(self, inputstring, debug=False, stepmode=False, limit=1000):
+        
+        validAlphabet = self.getAlphabet()
+
+        #Check that all characters in the input string are valid, if not, dont process the input. (It will be rejecting anyway!)
+        for char in inputstring:
+            if char not in validAlphabet:
+                print("Input string contains an unsupported symbol for this FSM, input rejected.")
+                return False
+        statesVisited = [self.initialState.identifier]
         iters = 0
         inputAccepted = False
         if (stepmode): 
@@ -65,7 +73,6 @@ class FSM:
         #2DFA
         if(self.FSMType == "2DFA"):
             i=0
-            #TODO: Explore other termination conditions
             #Terminates the process if an iteration limit is reached.
             if (iters > limit):
                 print("Max iteration limit (" + limit + ") reached, input rejected.")
@@ -76,6 +83,8 @@ class FSM:
                 if (debug): print("Current Symbol: " + str(inputstring[i]))
                 if(i>0): lastDirection = direction
                 newstate_code, direction = self.currentState.process(inputstring[i])
+                if(newstate_code not in statesVisited):
+                    statesVisited.append(newstate_code)
                 if (debug): print("Transitioning to: " + newstate_code + " with direction: " + direction)
                 newstate = self.find(newstate_code)  
                 if newstate is not None:
@@ -104,11 +113,76 @@ class FSM:
             if(self.currentState.getAccepting() == True):
                 inputAccepted=True
                 
+
+        #2NFA
+        if(self.FSMType == "2NFA"):
+            initialPath = (self.initialState.identifier, 0)
+            currentPaths = []
+            currentPaths.append(initialPath)
+            inputAccepted = False
+            
+            while(currentPaths):
+                stateID = currentPaths[0][0]
+                state = self.find(stateID)
+                currentCharIndex = currentPaths[0][1]
+                nextCharIndex = currentCharIndex
+                
+
+                
+                if (iters > limit):
+                    print("Max iteration limit (" + limit + ") reached, input rejected.")
+                    return False
+                
+                transitions = state.nfa_process(inputstring[currentCharIndex])
+                
+                currentTransition = transitions[0]
+                
+                
+                if len(transitions) > 1:
+                    for i in range(1,len(transitions)):
+                        #Add all other potential paths
+                        state= transitions[i][0]
+                        direction = transitions[i][1]
+                        if(direction == "L"):
+                            charIndex = currentCharIndex-1
+                        if(direction == "R"):
+                            charIndex = currentCharIndex+1
+                        if(direction == "ROTATE"):
+                            charIndex = 0
+                            
+                        for path in currentPaths:
+                            if path != (state,charIndex):                             
+                                currentPaths.append((state,charIndex))
+                
+                transitionStateID = currentTransition[0]
+                if(transitionStateID not in statesVisited):
+                    statesVisited.append(transitionStateID)
+                currentDirection = currentTransition[1]
+                if(currentDirection == "L"):
+                    nextCharIndex = currentCharIndex-1
+                if(currentDirection == "R"):
+                    nextCharIndex = currentCharIndex+1
+                if(currentDirection == "ROTATE"):
+                    nextCharIndex = 0
+                
+                transitionState = self.find(transitionStateID)
+                if(transitionState.accepting and inputstring[currentCharIndex]==">" and currentDirection=="R"):
+                    currentPaths = []
+                    inputAccepted=True
+                elif(currentCharIndex > len(inputstring) or (inputstring[currentCharIndex]==">" and currentDirection=="R")):
+                     #Path has ended
+                     currentPaths.remove(currentPaths[0])
+                else:
+                    currentPaths[0] = (transitionStateID, nextCharIndex)
+                iters += 1
+                
         #DFA
         elif(self.FSMType == "DFA"):
             for char in inputstring:
                 if (debug): print("Current Symbol: " + char)
                 newstate_code, direction = self.currentState.process(char)
+                if(newstate_code not in statesVisited):
+                    statesVisited.append(newstate_code)
                 if (debug): print("Transitioning to: " + newstate_code)
                 newstate = self.find(newstate_code) 
                 #If no state is specified in the transition, stay in the same state
@@ -118,70 +192,91 @@ class FSM:
                     if (debug): print("No state found for code: " + newstate_code + " continuing in same state")
                 if (stepmode): input("Press return to proceed to the next step")
                 iters += 1
-            print(self.currentState.identifier)
-            print(self.currentState.accepting)
             if(self.currentState.getAccepting() == True):
                 inputAccepted=True
                 
         #NFA
         elif(self.FSMType == "NFA"):
             currentStates = []
+            #Maintain a list of active paths, and what state(s) we are in at any given time
             currentStates.append(self.getInitialState())
             
             for char in inputstring:
                 if (debug): print("Current Symbol: " + char)
                 nextStates = []
+                #Find the next transition on all paths
                 for state in currentStates:
                     stateIdentifiers = state.nfa_process(char)
                     for ID in stateIdentifiers:
+                        if(ID not in statesVisited):
+                            statesVisited.append(ID)
                         nextState = self.find(ID)
                         if nextState not in nextStates: 
-                            nextStates.append(nextState)    
+                            nextStates.append(nextState) 
+                    iters += 1
                 currentStates = nextStates
-                iters += 1
             for state in currentStates:
                 self.setCurrentState(state)
+                #If any states are accepting at the end of the input, then the input is accepting
                 if self.currentState.getAccepting() == True:
                     inputAccepted=True
 
                       
         print("Total iterations:" + str(iters))
-        return(inputAccepted)
+        print("States Visited:", len(statesVisited), "/", len(self.allStates))
+        return inputAccepted, statesVisited, iters
         
     def save(self,filename):
         text = utils.FSMEncoder().encode(self)
         utils.writeToFile(filename, text=text, option="JSON")
     
-    
+    #Check that an FSM contains at least 1 accepting state, and that all states have atleast one outgoing transition
     def validate(self):
-        valid_ids = []
         accepting_state_count = 0
+        missingTransitions = []
+        missingTransition = False
         for state in self.allStates:
-            valid_ids.append(state.identifier)
+            if len(state.states) < 1:
+                missingTransitions.append(state.identifier)
+                missingTransition = True
             accepting_state_count += state.accepting
-            print("dirs:" + str(state.directions))
-            print(("L" in state.directions or "R" in state.directions) or not state.direction)
-        print(valid_ids)
-        print(accepting_state_count)
-     
-    def minimize(self):
-        print("SELF:", self)
-        statesToCompare = self.getAllStates()
-        while(statesToCompare):
-            state1 = statesToCompare.pop(0)
-            for state2 in statesToCompare:
-                if state1.chars == state2.chars and state1.states == state2.states:
-                    self.removeState(state2)
-        return self
-                    
             
-     
+        if accepting_state_count < 1:
+            print("FSM does not contain an accepting state")
+        if missingTransitions:
+            print("FSM has missing transitions for state IDs:")
+            print(missingTransitions)
+        
+    #Remove exact duplicate states.
+    def removeDuplicates(self):
+        statesToCompare = self.getAllStates()
+        for state1 in statesToCompare:
+            for state2 in statesToCompare:
+                if state1 != state2:
+                    if state1.identifier == state2.identifier and state1.chars == state2.chars and state1.states == state2.states and state1.accepting == state2.accepting:
+                        self.removeState(state2)
+        return self
+    
+    #Get all supported characters across all states in the FSM                
+    def getAlphabet(self):
+       alphabet = []
+       
+       for state in self.allStates:
+           for symbol in state.chars:
+               if symbol not in alphabet:
+                   alphabet.append(symbol)                  
+       return alphabet
+   
+    #Automata Visualization - Not all combinations have been tested, it is likely tweaks in LaTeX are required for the desired output
     def visualize(self):
         distanceChosen = False
         distance = ""
+        scaleChosen = False
+        scale = 1
         arrowChosen = False
         arrowstyle = ""
         option = ""
+        
         #Customization
         while(not distanceChosen):
             print("please specify the distance between nodes in centimeters (min: 0, max: 10, default: 3.5)")
@@ -256,7 +351,7 @@ class FSM:
             if(intOption == 12): arrowstyle = "Latex"
             if(intOption == 13): arrowstyle = "Rectangle"
             if(intOption == 14): arrowstyle = "Square"
-            if(intOption == 15): arrowstyle = "Stealth"
+            if(intOption == 15): arrowstyle = "stealth"
             if(intOption == 16): arrowstyle = "Triangle"
             if(intOption == 17): arrowstyle = "Turned Square"
             if(intOption == 18): arrowstyle = "Classical TikZ Rightarrow"
@@ -265,12 +360,22 @@ class FSM:
             
             if(arrowstyle != ""): arrowChosen = True
 
+        while(not scaleChosen):
+            print("please specify the scale of the FSM image (default: 1 (must be greater than 0))")
+            scaleChoice = input(">\t")           
+            try:
+                scale = int(scaleChoice)
+            except ValueError:
+                pass
+            if(scale > 0): scaleChosen = True
         
         fileString = "\\begin{tikzpicture}[->,>="
         fileString += arrowstyle
         fileString += ",shorten >=1pt,auto,node distance="
         fileString += str(distance)
-        fileString += "cm,scale = 1,transform shape]"
+        fileString += "cm,scale = "
+        fileString += str(scale)
+        fileString += ",transform shape]"
         fileString += "\n"
         stateCount = 0
         index = 0
@@ -300,26 +405,28 @@ class FSM:
             edgeLabel = ""
             for i in range(len(state.states)):            
                 isConnected = (state.states[i] in connectedStates.keys()) 
-                if(isConnected and self.FSMType == "2DFA"):
+                if(isConnected and (self.FSMType == "2DFA" or self.FSMType == "2NFA")):
                     isSameDirection = (state.directions[i] in connectedStates[state.states[i]])
                     direction = state.directions[i] 
-                elif(isConnected and self.FSMType != "2DFA"):
+                elif(isConnected and (self.FSMType != "2DFA" or self.FSMType != "2NFA")):
                     isSameDirection = True
                 
+                #Attempt to resolve overlapping connections - this only works if two states connect to eachother, overlaps are still entirely possible.
+                #Please review and tweak TikZ code before use
                 if(isConnected and isSameDirection):              
-                    if(self.FSMType == "2DFA"): 
+                    if(self.FSMType == "2DFA" or self.FSMType == "2NFA"): 
                         stateConnectionDict[(state.states[i]+"|"+state.directions[i])] += "," + state.chars[i]
                     else:
                         stateConnectionDict[state.states[i]] += "," + state.chars[i]
                 else:
-                    if(self.FSMType == "2DFA"):
+                    if(self.FSMType == "2DFA" or self.FSMType == "2NFA"):
                         stateConnectionDict[(state.states[i]+"|"+state.directions[i])] = state.chars[i]
                         connectedStates[state.states[i]] = [state.directions[i]]
                     else:
                         stateConnectionDict[state.states[i]] = state.chars[i]
                         connectedStates[state.states[i]] = True
                 
-                if(self.FSMType == "2DFA"):
+                if(self.FSMType == "2DFA" or self.FSMType == "2NFA"):
                     edgeDirection = (": " + state.directions[i])  
                 
                 edgeLabels = list(stateConnectionDict.values())
@@ -328,13 +435,14 @@ class FSM:
             edgesToAdd = len(stateConnectionDict)
             edges = list(stateConnectionDict.keys())
             for i in range(edgesToAdd):
-                if(self.FSMType == "2DFA"):
+                if(self.FSMType == "2DFA" or self.FSMType == "2NFA"):
                     pipeIndex = edges[i].index("|")
                     stateID = edges[i][0:pipeIndex]
                     direction = edges[i][pipeIndex+1:]
                 else: stateID = edges[i]
                 modifier = ""
                 if(stateID == state.identifier):
+                    #If it connects to itself, then create a looped arc
                     modifier = "[loop above]"
                 elif(stateID in allConnections.keys()):
                     if(state.identifier in allConnections[stateID]):
@@ -342,7 +450,7 @@ class FSM:
                 pathString += "(" + state.identifier + ")\t"
                 pathString += "edge" + "\t" + modifier + "\t" + "node{$" 
                 pathString += edgeLabels[i]
-                if(self.FSMType == "2DFA"): pathString += ": " + direction
+                if(self.FSMType == "2DFA" or self.FSMType == "2NFA"): pathString += ": " + direction
                 pathString += "$} " + "(" + stateID + ")\n"
         pathString += ";"
         
@@ -357,6 +465,7 @@ class FSM:
             if state.accepting == True:
                 nodeString += ",accepting"
             if y==0: position = ""
+            #Always move the next node to the right. Will result in a long line of states, manual tweaks required.
             else: position = "[right of=" + str((self.allStates[y-1].identifier)) + "]"
             nodeString += "] "+ position + "(" + state.identifier + ") {$" + state.identifier + "$};\n"
         
@@ -368,7 +477,7 @@ class FSM:
         utils.writeToFile(filename, fileString, "Visualize")
         return  
     
-
+    #NFA to DFA conversion. Standard Scott-Rabin Powerset Construction method.
     def nfa_to_dfa(self):
         if self.FSMType != "NFA":
             print("This automata is not a one-way non-deterministic automaton. This function converts NFA to DFA only.")
@@ -380,7 +489,7 @@ class FSM:
         unresolvedStates = {}
         #List all chars in all states
         chars = self.initialState.getChars()
-        initial = State(self.initialState.identifier, [], [])
+        initial = State(self.initialState.identifier, chars=[], states=[], directions=None, accepting=self.initialState.accepting)
         
         #Get a unique list of symbols the NFA accepts
         arrAlphabet = list(dict.fromkeys(chars).keys())
@@ -394,13 +503,19 @@ class FSM:
          
         #Resolve initial state + transitions
         for char in (arrAlphabet):
+            acceptingState=False
             states = self.initialState.getResultStateByChar(char)
             identifier = ""
-            for ndState in states:
+            uniqueStates = list(dict.fromkeys(states))
+            uniqueStates.sort()
+            for ndState in uniqueStates:
+                if(NFA.find(ndState).getAccepting()):
+                    acceptingState = True
                 identifier += ndState 
             unresolvedStates[identifier] = states
-            initial.addTransition(char, identifier)    
-            newState = State(identifier, chars = [], states = [], accepting = False, directions=None)                                                      
+            initial.addTransition(char, identifier)
+            #NFA.find(identifier)
+            newState = State(identifier, chars = [], states = [], accepting = acceptingState, directions=None)                                                      
             DFA.addState(newState)
             
 
@@ -414,7 +529,7 @@ class FSM:
                     
                     states = []
                     #Find all potential state transitions in the original NFA
-                    for stateID in unresolvedStates[state.identifier]:                       
+                    for stateID in unresolvedStates[state.identifier]:  
                         result = self.find(stateID)
                         resultState = result.getResultStateByChar(char)
                         
@@ -427,30 +542,26 @@ class FSM:
                     #Link to an existing, or create a new state based on the union of all potential state transitions
                     identifier = ""
                     acceptingState=False
-                    for ndState in states:
+                    uniqueStates = list(dict.fromkeys(states))
+                    uniqueStates.sort()
+                    for ndState in uniqueStates:
+                        #Check if any of the "sub-states" in the previous NFA were accepting, i.e. in q0q1, check both q0 and q1
                         if(NFA.find(ndState).getAccepting()):
                             acceptingState = True
                         identifier += ndState
-                    if identifier not in unresolvedStates.keys():
+                    if identifier not in unresolvedStates.keys() and identifier != DFA.initialState.identifier:
                         unresolvedStates[identifier] = states
                         newState = State(identifier, chars = [], states = [], accepting = acceptingState, directions=None)
                         DFA.addState(newState)
-                    state.addTransition(char, identifier)                   
+                    state.addTransition(char, identifier)
+                    
+        #Remove exact duplicates, for security, the algorithm should not allow duplicates anyway.            
+        DFA = DFA.removeDuplicates()
        
         return DFA                                                                 
 
-                        
-
-                
-                    
-                
-                
-                 
-
-
     #Union of automata requires a product construction of the state tables of both individual automata
     def operation(self, oper, automata=None):
-        
         if (oper == "COMPLEMENT" and automata == None):
             newStates = []
             for state in self.allStates:                
@@ -458,21 +569,17 @@ class FSM:
                 chars = state.getChars()
                 states = state.getStates()
                 accepting = (not(state.getAccepting()))
-                print("States:")
-                print(state.getAccepting())
-                print(accepting)
                 newState = State(identifier, chars=chars, states=states, accepting=accepting)
                 newStates.append(newState)
             initialState = newStates[0]
             DFA = FSM(self.FSMType, initialState, newStates)
             return DFA
         #Check if FSMs are of the same type
-        elif(self.FSMType != automata.FSMType):
+        elif(self.FSMType != automata.FSMType and automata != None):
             print("FSMs are not of the same type: " + self.FSMType + " != " + automata.FSMType)
-            return -1
-        #TODO: allow for non-matching sets, and add error states for non-shared symbol transitions
-        #Check if they contain the same symbol set      
-        elif(sorted(self.initialState.getChars()) != sorted(self.initialState.getChars())):
+            return -1   
+        #Check for same alphabet
+        elif(sorted(self.getAlphabet()) != sorted(automata.getAlphabet()) and automata != None):
             print("FSMs use different alphabets")
             return -1   
         elif(self.FSMType != "DFA"):
@@ -487,43 +594,32 @@ class FSM:
                     
                     states = []
                     identifier = state1.getIdentifier() + state2.getIdentifier()
-                    print("processing state:", identifier)
-                    print("is it accepting?:", (state1.getAccepting() == True or state2.getAccepting() == True))
+                    #Merge character sets.
                     chars = list(set(state1.getChars()) | set(state2.getChars()))
                     chars.sort()
                     for i in range(len(chars)):
-                        print("DFA 1 (even ones) transitions to:", state1.states[i], "upon receiving:",chars[i])
-                        print("DFA 2 (ends in one) transitions to:", state2.states[i], "upon receiving:",chars[i])
-                        print("so combined state is:", (state1.states[i]+state2.states[i]) )
                         states.append((state1.states[i]+state2.states[i]))
                     if (oper.upper() == "UNION"):
+                        #If either is accepting, then mark as accepting
                         if(state1.getAccepting() == True or state2.getAccepting() == True):
-                            print(identifier, " - is accepting")
+                            #print(identifier, " - is accepting")
                             accepting = True
                         else:
                             accepting = False
                     elif (oper.upper() == "INTERSECTION"):
+                        #If both are accepting, then mark as accepting
                         if(state1.getAccepting() == True and state2.getAccepting() == True):
-                            print(identifier, " - is accepting")
+                            #print(identifier, " - is accepting")
                             accepting = True
                         else:
                             accepting = False
                     productState = State(identifier, chars=chars, states=states, accepting=accepting)
-                    print("adding state:", productState.getIdentifier())
                     newStates.append(productState)
             initialState = newStates[0]
-            DFA = FSM(self.FSMType, initialState, newStates)
-            return DFA
+            FA = FSM(self.FSMType, initialState, newStates)
+            return FA
         
-                    
-                    
-            
-            
-                        
-                        
-                        
-           
-        
+
 
 class State:
     def __init__(self, identifier, chars=None, states=None, directions = None, accepting = False):
@@ -560,17 +656,38 @@ class State:
         
     def setDirections(self, directions):
         self.directions = directions
+    
+    def getTransitions(self):
+        return list(zip(self.chars, self.states))
+    
+    #Override "copy" to easily copy a state by val not by ref.
+    def __copy__(self):
+        ID = self.getIdentifier().copy()
+        chars = self.getChars().copy()
+        states = self.getStates().copy()
+        directions = self.getDirections().copy()
+        accepting = self.getAccepting().copy()
+        
+        return State(ID, chars, states, directions, accepting)    
         
     def addTransition(self, char, state, direction = None):
         chars = self.getChars()
         states = self.getStates()
         directions = self.getDirections()
         
-        chars.append(char)
+        if(chars):
+            chars.append(char)
+        else:
+            chars = [char]
+            
         self.setChars(chars)
         
-        
-        states.append(state)
+        if(states):
+            states.append(state)
+        else:
+            states = [state]        
+            
+            
         self.setStates(states)
         
         
@@ -589,6 +706,7 @@ class State:
                 
         return resultStates
     
+    #This returns a single transition
     def process(self, input):
         if input in self.chars:
             direction = None
@@ -598,7 +716,7 @@ class State:
             return newstate_code, direction
         return None
 
-
+    #This returns a list of tuples of potential transitions 
     def nfa_process(self,input):
         chars = self.getChars()
         states = self.getStates()

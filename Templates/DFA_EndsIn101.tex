@@ -1,0 +1,40 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata}
+\begin{document}
+
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3.5cm,
+        scale = 1,transform shape]
+
+  \node[state,initial] (q_0) {$q_{0}$};
+  \node[state] (s_0) [right of=q_0] {$s_{0}$};
+  \node[state] (s_1) [below of=q_0] {$s_{1}$};
+  \node[state] (s_01) [right of=s_0] {$s_{01}$};
+    \node[state] (s_00) [right of=s_01] {$s_{00}$};
+  \node[state] (s_10) [below of=s_00] {$s_{10}$};
+  \node[state] (s_11) [below of=s_1] {$s_{11}$};
+  \node[state, accepting] (s_101) [below of=s_11] {$s_{101}$};
+
+  \path (q_0) 		edge			  node {$0$} (s_0)
+  				    edge			  node {$1$} (s_1)
+  		(s_0)	    edge [bend left]			  node {$0$} (s_00)
+  					edge 			  node {$1$} (s_01)
+  	    (s_1)  		edge 			  node {$0$} (s_10)
+  					edge 			  node {$1$} (s_11)
+  	    (s_00) 		edge [loop above] node {$0$} (s_00)
+  			   		edge [bend left]  node {$1$} (s_01)
+  	    (s_01)  	edge 			  node {$0$} (s_10)
+  			   		edge	[bend right]		  node {$1$} (s_11)
+  	    (s_10)  	edge			  node {$0$} (s_00)
+  			   		edge [bend left]  node {$1$} (s_101)
+  		(s_11)  	edge			  node {$0$} (s_10)
+  			    	edge [loop left]  node {$1$} (s_11)
+  		(s_101)  	edge			  node {$0$} (s_10)
+  			    	edge 			  node {$1$} (s_11);
+\end{tikzpicture}
+
+
+\end{document}
